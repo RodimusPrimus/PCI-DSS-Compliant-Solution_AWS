@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation Template for Application Load Balancer, WAF, and Network Firewall
+
+Resources:
+  MyLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MyLoadBalancer
+      Subnets:
+        - subnet-xxxxxxx
+        - subnet-yyyyyyy
+      SecurityGroups:
+        - sg-xxxxxxx
+
+  MyWebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: MyWebACL
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      Rules:
+        - Name: MyRule
+          Priority: 1
+          Statement:
+            ByteMatchStatement:
+              SearchString: "bad-user"
+              FieldToMatch:
+                UriPath: {}
+              TextTransformations:
+                - Priority: 0
+                  Type: NONE
+          VisibilityConfig:
+            SamplingEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "MyWAFMetric"
+
+  MyNetworkFirewall:
+    Type: AWS::NetworkFirewall::Firewall
+    Properties:
+      FirewallName: MyNetworkFirewall
+      FirewallPolicyArn: arn:aws:network-firewall:us-west-2:123456789012:firewall-policy/MyFirewallPolicy
+      VpcId: vpc-xxxxxxx
+      SubnetMappings:
+        - SubnetId: subnet-xxxxxxx
+        - SubnetId: subnet-yyyyyyy
+      Description: "Network Firewall for enhanced security."
+
+Outputs:
+  LoadBalancerDNS:
+    Description: "DNS name of the Application Load Balancer"
+    Value: !GetAtt MyLoadBalancer.DNSName
+  WebACLId:
+    Description: "ID of the WebACL"
+    Value: !Ref MyWebACL
+  NetworkFirewallId:
+    Description: "ID of the Network Firewall"
+    Value: !Ref MyNetworkFirewall
